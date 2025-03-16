@@ -1,0 +1,12 @@
+{
+    "api_url": {
+        "type": "string",
+        "description": "BibiGPT API地址",
+        "hint": "BibiGPT获取API地址，用于获取B站视频内容摘要"
+    },
+    "proxy_url": {
+        "type": "string",
+        "description": "代理服务器地址",
+        "hint": "格式示例：http://127.0.0.1:1080 或 socks5://user:pass@host:port"
+    }
+}
