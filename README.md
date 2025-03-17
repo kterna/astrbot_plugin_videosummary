@@ -37,4 +37,4 @@ https://bibigpt.co/
 - requests
 
 ## 版本
-1.1.0
+1.2.0

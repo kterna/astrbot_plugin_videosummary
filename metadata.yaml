@@ -1,6 +1,6 @@
 name: videosummary # 这是你的插件的唯一识别名。
 desc: 视频内容智能总结 # 插件简短描述
 help: 支持B站、YouTube、抖音等多平台视频内容总结 # 插件的帮助信息
-version: v1.1.0 # 插件版本号。格式：v1.1.1 或者 v1.1
+version: v1.2.0 # 插件版本号。
 author: kterna # 作者
 repo: https://github.com/kterna/astrbot_plugin_videosummary # 插件仓库地址

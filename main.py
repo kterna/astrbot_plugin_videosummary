@@ -4,25 +4,25 @@ from astrbot.api import AstrBotConfig
 import requests
 import re
 
-@register("videosummary", "AstrBot", "视频内容智能总结插件", "1.1.0", "")
+@register("videosummary", "AstrBot", "视频内容智能总结插件", "1.2.0", "")
 class VideoSummaryPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
         self.api_url = config.get("api_url", "")
         self.proxy_url = config.get("proxy_url", "")
-        
-        # 通用的URL识别正则表达式
-        self.url_pattern = r'https?://[^\s<>"]+'
     
     @filter.command("videosummary", alias=['总结视频', '视频总结'])
     async def summarize_video(self, event: AstrMessageEvent, video_url: str = None):
         '''总结视频内容 (支持各大视频平台)'''
-        if not video_url:
+        # 使用完整的消息文本来提取URL
+        message_text = event.message_str
+        if not message_text:
             yield event.plain_result("请提供视频链接")
             return
         
-        # 检查是否是有效的URL
-        if not self._is_valid_url(video_url):
+        # 提取并清理URL
+        url = self._extract_url(message_text)
+        if not url:
             yield event.plain_result("请提供有效的视频链接")
             return
         
@@ -34,7 +34,7 @@ class VideoSummaryPlugin(Star):
         try:
             # 发送请求获取视频摘要
             yield event.plain_result(f"正在获取视频内容摘要，请稍候...")
-            summary_data = self._get_video_summary(video_url)
+            summary_data = self._get_video_summary(url)
             
             if not summary_data or not summary_data.get('success'):
                 yield event.plain_result("获取视频摘要失败，请检查视频链接是否有效或稍后再试")
@@ -47,9 +47,19 @@ class VideoSummaryPlugin(Star):
         except Exception as e:
             yield event.plain_result(f"获取视频摘要时发生错误: {str(e)}")
     
-    def _is_valid_url(self, url: str) -> bool:
-        """检查是否是有效的URL"""
-        return bool(re.match(self.url_pattern, url))
+    def _extract_url(self, text: str) -> str:
+        """从文本中提取并清理URL"""
+        # 简单匹配http(s)开头的URL
+        url_pattern = r'https?://\S+'
+        match = re.search(url_pattern, text)
+        if not match:
+            return None
+        
+        # 获取匹配的URL并清理
+        url = match.group(0)
+        # 移除URL末尾可能的标点符号和其他字符
+        url = url.rstrip('.,;!?】】）】 \t\n\r')
+        return url
     
     def _get_video_summary(self, video_url: str) -> dict:
         """获取视频摘要"""
@@ -77,22 +87,6 @@ class VideoSummaryPlugin(Star):
         if summary:
             result += f"## 内容摘要\n{summary}\n\n"
         
-        # 添加亮点
-        highlights = self._extract_highlights(summary)
-        if highlights:
-            result += "## 视频亮点\n"
-            for highlight in highlights:
-                result += f"- {highlight}\n"
-            result += "\n"
-        
-        # 添加思考
-        thoughts = self._extract_thoughts(summary)
-        if thoughts:
-            result += "## 思考与问题\n"
-            for thought in thoughts:
-                result += f"- {thought}\n"
-            result += "\n"
-        
         # 添加源视频链接
         source_url = data.get('sourceUrl', '') or data.get('url', '')
         if source_url:
@@ -107,35 +101,3 @@ class VideoSummaryPlugin(Star):
             result += "\n"
         
         return result
-    
-    def _extract_highlights(self, summary: str) -> list:
-        """从摘要中提取亮点"""
-        highlights = []
-        if not summary:
-            return highlights
-        
-        # 查找亮点部分
-        highlight_section = re.search(r'## 亮点\n([\s\S]*?)(?:\n##|$)', summary)
-        if highlight_section:
-            highlight_text = highlight_section.group(1).strip()
-            # 提取每个亮点（以 - 开头的行）
-            highlight_items = re.findall(r'- (.+?)(?:\n|$)', highlight_text)
-            highlights.extend(highlight_items)
-        
-        return highlights
-    
-    def _extract_thoughts(self, summary: str) -> list:
-        """从摘要中提取思考"""
-        thoughts = []
-        if not summary:
-            return thoughts
-        
-        # 查找思考部分
-        thought_section = re.search(r'## 思考\n([\s\S]*?)(?:\n##|$)', summary)
-        if thought_section:
-            thought_text = thought_section.group(1).strip()
-            # 提取每个思考（以 - 开头的行）
-            thought_items = re.findall(r'- (.+?)(?:\n|$)', thought_text)
-            thoughts.extend(thought_items)
-        
-        return thoughts
